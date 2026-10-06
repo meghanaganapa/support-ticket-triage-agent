@@ -1,0 +1,338 @@
+{
+  "backend": "offline",
+  "dataset": "heldout",
+  "train_size": 294,
+  "test_size": 106,
+  "category_accuracy": 0.585,
+  "category_macro_f1": 0.581,
+  "priority_accuracy": 0.755,
+  "escalation_recall": 1.0,
+  "escalation_precision": 0.429,
+  "auto_queued_pct": 5.7,
+  "guardrail_pass_pct": 100.0,
+  "avg_latency_ms": 5.4,
+  "est_triage_minutes_saved_per_100": 400.0,
+  "llm_usage": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "seconds": 0.0
+  },
+  "per_category": {
+    "account": {
+      "precision": 0.4,
+      "recall": 0.9230769230769231,
+      "f1-score": 0.5581395348837209,
+      "support": 13.0
+    },
+    "billing": {
+      "precision": 0.6666666666666666,
+      "recall": 0.3076923076923077,
+      "f1-score": 0.42105263157894735,
+      "support": 26.0
+    },
+    "feature_request": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 22.0
+    },
+    "refund": {
+      "precision": 1.0,
+      "recall": 0.7272727272727273,
+      "f1-score": 0.8421052631578947,
+      "support": 11.0
+    },
+    "shipping": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 12.0
+    },
+    "technical": {
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1-score": 0.6666666666666666,
+      "support": 22.0
+    },
+    "accuracy": 0.5849056603773585,
+    "macro avg": {
+      "precision": 0.5944444444444444,
+      "recall": 0.6596736596736598,
+      "f1-score": 0.5813273493812049,
+      "support": 106.0
+    },
+    "weighted avg": {
+      "precision": 0.5333333333333333,
+      "recall": 0.5849056603773585,
+      "f1-score": 0.5106887446787217,
+      "support": 106.0
+    }
+  },
+  "errors": [
+    {
+      "id": "T0002",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Not sure if this is the right place to ask. Any plans to support multi-currency invoices? We bill some cilents in NZD. Thanks in advance"
+    },
+    {
+      "id": "T0012",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Sorry if this has been asked before. Could you add an integration with Stripe for direct debits?"
+    },
+    {
+      "id": "T0018",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hello, I checked the help centre but couldn't find anything. Could you add an integration with NAB for direct debits? Cheers"
+    },
+    {
+      "id": "T0046",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hi there Please add a dark mode to the web app, would really help."
+    },
+    {
+      "id": "T0054",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi, Is there a discount for non-profits on the Starter plan? Cheers"
+    },
+    {
+      "id": "T0057",
+      "true": "refund",
+      "pred": "billing",
+      "body": "Hi there We've been using CloudLedger for about two years. We downgraded from Business but were billed the old price. Please refund the diff"
+    },
+    {
+      "id": "T0066",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi team, We've been charged $1188 three times today. That's money out of a small business account, please fix urgently. Thanks in advance"
+    },
+    {
+      "id": "T0074",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hi, Could you add an integration with CommBank for direct debtis? Ta"
+    },
+    {
+      "id": "T0084",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Hi team, I checked the help centre but couldn't find anything. Any plans to support multi-currency invoices? We bill some clients in NZD."
+    },
+    {
+      "id": "T0103",
+      "true": "billing",
+      "pred": "technical",
+      "body": "We've been charged $29 three times today. That's money out of a small business account, please fix urgently. Ta"
+    },
+    {
+      "id": "T0117",
+      "true": "billing",
+      "pred": "account",
+      "body": "Hi there This is the second time I'm writing about this. We've been charged $79 three times today. That's money out of a small business acco"
+    },
+    {
+      "id": "T0129",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi, Our accountant flagged this today. We've been charged $1188 three times today. That's money out of a small business account, please fix "
+    },
+    {
+      "id": "T0137",
+      "true": "refund",
+      "pred": "billing",
+      "body": "To whom it may concern, This is the second time I'm writing about this. We downgraded from Starter but were billed the old price. Please ref"
+    },
+    {
+      "id": "T0154",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "This is the second time I'm writing about this. Could you add an integration with Stripe for direct debits? Thanks in advance"
+    },
+    {
+      "id": "T0165",
+      "true": "account",
+      "pred": "billing",
+      "body": "Hi there Our accountant flagged this today. Please remove Liam from our cacount, they no longer work here."
+    },
+    {
+      "id": "T0184",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Hey support, This is the second time I'm writing about this. Any plans to support multi-currency invoices? We bill some clients in NZD. Ta"
+    },
+    {
+      "id": "T0202",
+      "true": "billing",
+      "pred": "account",
+      "body": "Good morning, This is the second time I'm writing about this. Is there a discount for non-profits on the Growth plan? Regards"
+    },
+    {
+      "id": "T0207",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Sorry if this has been asked before. Could you add an integration with CommBank for direct debits?"
+    },
+    {
+      "id": "T0222",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi team, Our accountant flagged this today. Is there a discount for non-profits on the Starter plan? Cheers"
+    },
+    {
+      "id": "T0224",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Is there a discount for non-profits on the Starter plan? Thanks"
+    },
+    {
+      "id": "T0226",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "We've been using CloudLedger for about two years. Please add a dark mode to the web app, would really help."
+    },
+    {
+      "id": "T0234",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hi there This is the second time I'm writing about this. Could you add an integration with CommBank for direct debits?"
+    },
+    {
+      "id": "T0242",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Hi team, We've been using CloudLedger for about two years. Any plans to support multi-currency invoices? We bill some clients in NZD. Thanks"
+    },
+    {
+      "id": "T0247",
+      "true": "refund",
+      "pred": "billing",
+      "body": "Hi, Our accountant flagged this today. We downgraded from Enterprise but were billed the old price. Please refund the difference. Thanks in "
+    },
+    {
+      "id": "T0256",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "This is the second time I'm writing about this. Could you add an integration with CommBank for direct debits?"
+    },
+    {
+      "id": "T0257",
+      "true": "billing",
+      "pred": "technical",
+      "body": "To whom it may concern, Is there a discuont for non-profits on the Growth plan? Regards"
+    },
+    {
+      "id": "T0263",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Sorry if this has been asked before. Please add a dark mode to the web app, would really help. Thanks in advance"
+    },
+    {
+      "id": "T0264",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hello, Is there a discount for non-profits on the Starter plan? Kind regards"
+    },
+    {
+      "id": "T0283",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hello, Our accountant flagged this today. We've been charged $29 three times today. That's money out of a small business account, please fix"
+    },
+    {
+      "id": "T0289",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi team, Is there a discount for non-profits on the Enterprise plan?"
+    },
+    {
+      "id": "T0290",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi there Is there a discount for non-profits on the Growth plan? Kind regards"
+    },
+    {
+      "id": "T0306",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Any plans to support multi-currency invoices? We bill some clients in NZD. Thanks in advance"
+    },
+    {
+      "id": "T0318",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hello, This is the second time I'm writing about this. Please add a dark mode to the web app, would really help. Thanks in advance"
+    },
+    {
+      "id": "T0319",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi team, This is the second time I'm writing about this. Is there a discount for non-profits on the Business plan? Kind regards"
+    },
+    {
+      "id": "T0320",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Hi team, Any plans to support multi-currency invoices? We bill some clients in NZD."
+    },
+    {
+      "id": "T0326",
+      "true": "billing",
+      "pred": "account",
+      "body": "Good morning, Is there a discount for non-profits on the Buisness plan? Cheers"
+    },
+    {
+      "id": "T0335",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hello, I checked the help centre but couldn't find anything. Please add a dark mode to the web app, would really help. Thanks"
+    },
+    {
+      "id": "T0348",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "This is the second time I'm writing about this. Please add a dark mode to the web app, would really help. Regards"
+    },
+    {
+      "id": "T0363",
+      "true": "feature_request",
+      "pred": "technical",
+      "body": "Hi team, I checked the help centre but couldn't find anything. Any plans to support multi-currency invoices? We bill some clients in NZD."
+    },
+    {
+      "id": "T0364",
+      "true": "billing",
+      "pred": "technical",
+      "body": "To whom it may concern, We've been charged $249 three times today. That's money out of a small business account, please fix urgently. Kind r"
+    },
+    {
+      "id": "T0377",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Hi, Not sure if this is the right place to ask. We've been charged $1188 three times today. That's money out of a small business account, pl"
+    },
+    {
+      "id": "T0383",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Hello, This is the second time I'm writing about this. Could you add an integration with ANZ for direct debits? Cheers"
+    },
+    {
+      "id": "T0386",
+      "true": "feature_request",
+      "pred": "account",
+      "body": "Good morning, Not sure if this is the right place to ask. Could you add an integration with Stripe for direct debits? Regards"
+    },
+    {
+      "id": "T0399",
+      "true": "billing",
+      "pred": "technical",
+      "body": "Good morning, Not sure if this is the right place to ask. We've been charged $129 three times today. That's money out of a small business ac"
+    }
+  ]
+}
