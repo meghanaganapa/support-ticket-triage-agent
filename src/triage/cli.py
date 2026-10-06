@@ -10,8 +10,8 @@ import argparse
 import json
 from pathlib import Path
 
+from .factory import build_orchestrator
 from .models import Ticket
-from .orchestrator import TriageOrchestrator
 
 
 def render(result) -> str:
@@ -38,7 +38,7 @@ def main() -> None:
     ap.add_argument("--json", action="store_true", help="print raw JSON")
     args = ap.parse_args()
 
-    orch = TriageOrchestrator()
+    orch = build_orchestrator()
     if args.file:
         with args.file.open() as f:
             tickets = [Ticket(**json.loads(line)) for line in list(f)[: args.limit]]

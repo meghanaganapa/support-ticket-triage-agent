@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "support-ticket-triage-agent"
-version = "0.1.0"
-description = "Multi-agent system that routes, prioritises and drafts replies for customer support tickets, with guardrails, human-in-the-loop review and an MCP server."
+version = "0.2.0"
+description = "Multi-agent support ticket triage orchestrated by the Claude Agent SDK, with guardrails, human-in-the-loop review, a calibrated offline fallback, honest evaluation and an MCP server."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -21,7 +21,8 @@ dependencies = [
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.40"]
 openai = ["openai>=1.40"]
-dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.5"]
+agent = ["claude-agent-sdk>=0.1"]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.5", "claude-agent-sdk>=0.1"]
 
 [project.scripts]
 triage = "triage.cli:main"

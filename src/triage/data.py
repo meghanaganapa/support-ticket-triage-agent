@@ -17,7 +17,28 @@ def load_rows(path: Path = DEFAULT_DATA) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
-HARD_DATA = ROOT / "data" / "hard_tickets.jsonl"
+DEV_DATA = ROOT / "data" / "dev_tickets.jsonl"        # 30 hand-written; used for tuning thresholds
+TEST_DATA = ROOT / "data" / "test_locked.jsonl"       # 90 hand-written; never used for tuning
+TEST_SHA = ROOT / "data" / "test_locked.sha256"
+EXTRA_TRAIN = ROOT / "data" / "train_varied.jsonl"    # hand-written varied phrasings for training
+
+
+def training_rows() -> list[dict]:
+    """Everything the models may learn from: synthetic tickets + varied hand-written ones."""
+    rows = load_rows()
+    if EXTRA_TRAIN.exists():
+        rows += load_rows(EXTRA_TRAIN)
+    return rows
+
+
+def verify_test_set() -> None:
+    """Refuse to evaluate if the locked test set was edited after it was committed."""
+    import hashlib
+
+    expected = TEST_SHA.read_text().split()[0]
+    actual = hashlib.sha256(TEST_DATA.read_bytes()).hexdigest()
+    if actual != expected:
+        raise RuntimeError("data/test_locked.jsonl changed since it was locked - results would not be comparable")
 
 
 def is_test(key: str, test_fraction: float = 0.3) -> bool:

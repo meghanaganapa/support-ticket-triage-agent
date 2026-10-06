@@ -2,12 +2,13 @@
 
 [![CI](https://github.com/meghanaganapa/support-ticket-triage-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/meghanaganapa/support-ticket-triage-agent/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent%20SDK-d97757)
 ![MCP](https://img.shields.io/badge/MCP-server-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A **multi-agent system** that reads incoming customer support tickets, routes each one to the right team, sets its priority and SLA, escalates outages and security incidents, and drafts a reply grounded in the help centre. Every draft passes **guardrails** and lands in a **human-in-the-loop** review queue before anything is sent.
+A **multi-agent system** that reads incoming customer support tickets, routes each one to the right team, sets its priority and SLA, escalates outages and security incidents, and drafts a reply grounded in the help centre. **Claude, through the Claude Agent SDK, orchestrates the agents as tools**, while safety guarantees are enforced in code. Every draft passes **guardrails** and goes to a **human-in-the-loop** review gate before anything is sent.
 
-It runs as a CLI, a REST API that a helpdesk webhook can call, and an **MCP server** so Claude Desktop, Claude Code, Cursor or VS Code can use it as tools.
+It runs as a CLI, a REST API that a helpdesk webhook can call, and an **MCP server**. With no API key, it falls back to a calibrated ML + rules pipeline that costs nothing.
 
 ---
 
@@ -16,61 +17,98 @@ It runs as a CLI, a REST API that a helpdesk webhook can call, and an **MCP serv
 A growing SaaS company (here, *CloudLedger*, a fictional invoicing app for small businesses) gets hundreds of tickets a day in one shared inbox. Today a person reads every ticket to decide:
 
 - **Who owns it?** Billing, engineering, account security, hardware logistics or product.
-- **How urgent is it?** An outage or a hacked account must be seen in minutes, while a feature idea can wait days.
+- **How urgent is it?** An outage or a hacked account must be seen within 15 minutes, while a feature idea can wait two days.
 - **What do we say?** Most answers already exist in the help centre.
 
 Manual triage is slow, inconsistent across shifts, and urgent tickets get buried behind routine ones.
 
 ## Solution
 
-Five specialised agents, each with one job, coordinated by an orchestrator:
+### Claude as orchestrator (Claude Agent SDK)
 
 ```mermaid
 flowchart LR
-    T[Incoming ticket] --> C[Classifier agent<br/>route to team]
-    C --> P[Priority agent<br/>P1-P4, SLA, escalation]
-    P --> K[Knowledge agent<br/>retrieve help articles]
-    K --> R[Responder agent<br/>draft grounded reply]
-    R --> G[Guardrail agent<br/>PII, promises, citations]
-    G --> H{Review gate}
-    H -->|escalated / low confidence /<br/>guardrail fail / refund| Q1[Human review queue]
-    H -->|routine, confident| Q2[Team queue with<br/>pre-filled draft]
+    T[Ticket] --> C{{Claude<br/>orchestrator}}
+    C -->|tool| A1[classify_ticket<br/>calibrated ML router]
+    C -->|tool| A2[assess_priority<br/>rules + learned models]
+    C -->|tool| A3[search_help_centre<br/>knowledge agent]
+    C -->|tool| A4[check_reply<br/>guardrail agent]
+    C -->|tool| A5[submit_triage<br/>final decision]
+    A5 --> E[Enforced in code:<br/>priority floor · guardrails re-run ·<br/>review gate · cost + trace]
+    E -->|escalated / low confidence /<br/>guardrail fail / refund| H[Human review queue]
+    E -->|routine, confident| Q[Team queue with<br/>pre-filled draft]
 ```
+
+Claude plans the triage: it reads the ticket, calls the agents as tools through an in-process MCP server, can overrule a low-confidence route, writes the reply, fixes it until the guardrail passes, and submits a structured decision. Claude gets **only these five tools**, with no file, shell or web access, plus a per-ticket **budget cap** and **turn limit**.
+
+Then the code enforces what an LLM must never be trusted with alone:
+
+| Guarantee | How |
+|---|---|
+| Claude can **raise** priority but never **lower** what the rules detected | `priority = max(rules floor, Claude)` |
+| Every reply is re-checked, even if Claude skipped `check_reply` | Deterministic guardrail runs again on the submitted reply |
+| Refunds, escalations, low confidence and guardrail failures reach a person | Review gate after Claude's decision |
+| The service never goes down with the LLM | Any SDK, network or budget failure falls back to the offline pipeline, and the trace says why |
+| Every run is auditable and costed | Per-ticket trace of tool calls, plus turns, tokens and USD from the SDK's `ResultMessage` |
+
+### The agents (also usable without Claude)
 
 | Agent | Job | How |
 |---|---|---|
-| **Classifier** | Pick the owning team | LLM, cross-checked by a TF-IDF (word + char n-gram) + logistic regression model. If they disagree, confidence drops and a human decides. |
-| **Priority** | P1–P4, SLA, escalate? | Takes the most urgent of 3 signals: hand-written rules, a learned escalation model, and the LLM. The LLM can **raise** priority but **never lower** a rule-detected P1. |
-| **Knowledge** | Find relevant help articles | TF-IDF retrieval with a category boost. Can be swapped for embeddings or Azure AI Search by replacing one method. |
-| **Responder** | Draft the reply | LLM constrained to cite retrieved articles, or a grounded template when offline. |
-| **Guardrail** | Make the draft safe | Deterministic checks: redacts card numbers, TFNs, phones and emails; blocks unauthorised promises ("guarantee", "we will refund"); blocks citations to articles that weren't retrieved; blocks other customers' names. |
-
-Every decision is recorded in a per-ticket **trace** (agent, timing, outputs), so a support lead can see *why* a ticket was routed and prioritised the way it was.
+| **Classifier** | Pick the owning team | Word + character n-gram TF-IDF, then **calibrated** logistic regression (Platt scaling), so a 0.8 confidence really means right about 80% of the time |
+| **Priority** | P1–P4, SLA, escalate? | The most urgent of: hand-written rules, a learned P1–P4 model, and a learned escalation model. Thresholds are tuned on dev data. |
+| **Knowledge** | Find help articles | TF-IDF over articles plus search-only keywords, with a category boost |
+| **Responder** | Draft the reply | Claude in agent mode, or a grounded template offline |
+| **Guardrail** | Make the draft safe | Redacts card numbers, TFNs, phones and emails; blocks unauthorised promises, hallucinated citations and other customers' names |
 
 ## Results
 
-Evaluated on two test sets the models never trained on (`python -m triage.evaluate`):
+### How it was measured
 
-- **Held-out templates (n=106):** synthetic tickets whose *phrasings* were completely held out of training (a group split, not a random split, so the model can't just memorise templates).
-- **Hard set (n=30):** hand-written, messy tickets in new wording: slang, mixed issues, indirect descriptions ("spinning wheel then a server error", "sign in from Brazil").
+The goal was results that would survive an interviewer's scepticism:
 
-Offline mode (ML + rules, no LLM, zero cost):
+- **Locked test set (90 hand-written tickets, 14 urgent).** It was [committed](https://github.com/meghanaganapa/support-ticket-triage-agent/commits/main/data/test_locked.jsonl) *before* any v0.2 change, and is checksum-verified on every evaluation and in CI. It is reported, never tuned on.
+- **Dev set (30 hand-written tickets).** The only data used to tune thresholds.
+- **Held-out templates (106 synthetic tickets).** These are generated from templates that never appear in training, so the model can't pass by memorising phrasings.
+- **95% bootstrap confidence intervals** on every metric, and a **paired bootstrap** of v0.1 vs v0.2 on the same tickets. On 90 tickets, one urgent ticket moves recall by 7 points, so a difference only counts as real if its interval excludes zero.
 
-| Metric | Held-out templates | Hard set |
-|---|---|---|
-| Routing accuracy | 58.5% | 83.3% |
-| Priority accuracy | 75.5% | 80.0% |
-| **Escalation recall** (urgent tickets caught) | **100%** | **33.3%** |
-| Escalation precision | 42.9% | 100% |
-| Guardrail pass rate | 100% | 100% |
-| Latency per ticket | ~6 ms | ~5 ms |
+### v0.1 → v0.2 on the locked test set (offline mode, zero cost)
 
-**What these numbers say:**
-- Classic ML + rules is fast and free but **brittle on new wording**. On the hard set it caught only 1 in 3 urgent tickets when they were described in unfamiliar ways. Before adding the learned escalation model, it caught **0%**.
-- That gap is exactly why the LLM agents exist. The offline system is the safety net and the CI regression gate. The LLM path is for reading nuance.
-- The system deliberately trades precision for recall on escalation. A false alarm costs a lead one minute; a missed outage costs a customer.
+| Metric | v0.1 | v0.2 | Paired difference (95% CI) | Verdict |
+|---|---|---|---|---|
+| Routing accuracy | 80.0% | **86.7%** | +6.7 pts (+2.2 to +12.2) | ✅ improved |
+| Auto-queued (no human needed) | 44.4% | **62.2%** | +17.8 pts (+10.0 to +26.7) | ✅ improved |
+| Retrieval hit@2 (right article in top 2) | 78.3% | **88.4%** | +10.1 pts (+2.9 to +18.8) | ✅ improved |
+| Priority accuracy | 78.9% | 83.3% | +4.4 pts (−1.1 to +10.0) | within noise |
+| Escalation recall (urgent caught) | 78.6% (11/14) | 85.7% (12/14) | +7.1 pts (−14.3 to +35.7) | within noise |
+| Escalation precision | 78.6% | 70.6% | — | ⚠️ lower |
+| Routing accuracy of auto-queued tickets | 90.0% | 92.9% | — | below the 95% target set on dev |
+| Guardrail pass rate | 100% | 100% | — | — |
 
-> **Run the LLM evaluation yourself:** set a key in `.env`, then run `python -m triage.evaluate --backend anthropic`, or use a free local model with `--backend openai` and Ollama. Results are written to `reports/`.
+Reports: [`reports/v0.1/`](reports/v0.1), [`reports/v0.2/`](reports/v0.2), paired comparison: [`reports/v0.2/paired_comparison_test.json`](reports/v0.2/paired_comparison_test.json).
+
+**What changed in v0.2:**
+1. **Calibrated confidence** plus a review threshold chosen on dev data against a business rule: "auto-queue as much as possible while keeping auto-queued routing at least 95% correct". This turned a magic number into a defensible decision, and it's the main driver of the +17.8 pt auto-queue gain.
+2. **102 varied hand-written training tickets** (synthetic templates alone taught the model phrasings, not meanings). A leakage test in CI checks that none near-duplicate an evaluation ticket; the closest pair is 67% similar.
+3. **A learned P1–P4 priority model** alongside the rules (it can raise priority, never lower it).
+4. **Search keywords on help articles** plus a tuned category boost, which lifted retrieval hit@2 by 10 points.
+
+**What the numbers say honestly:**
+- Three improvements are statistically clear. Priority and escalation moved up, but not beyond noise at this sample size.
+- Escalation **precision dropped**. With the F2 objective (recall weighted 2× precision), the tuner judged that worth it; on 14 urgent tickets, both effects are a ticket or two.
+- Auto-queued routing landed at 92.9%, short of the 95% target it was tuned to on dev. Dev (30 tickets) is too small to set that threshold precisely; a bigger dev set is the fix.
+- **The remaining misses are a wording problem.** For example, *"A staff member we let go last week still seems to be logging in and downloading reports"* is a security incident, but offline mode calls it a technical P3. The review gate still sends it to a human (low confidence), so it doesn't slip through silently. **Reading that kind of ticket is what the Claude orchestrator is for.**
+
+### Claude Agent SDK mode: measure it yourself
+
+The Claude-orchestrated numbers aren't in this README yet, because every published number here comes from a run I can reproduce. Run it with your own key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+make eval-claude      # 20 locked-test tickets with Claude Haiku 4.5, prints accuracy AND cost per ticket
+```
+
+A wiring check showed a single Claude turn costs about $0.003 with Haiku 4.5. A full triage takes about 6–8 tool-calling turns, so expect a few cents per ticket. Every run reports its exact cost, and `max_budget_usd` caps each ticket (default $0.10). Set a monthly spend limit in the Anthropic Console as well.
 
 ## Quickstart
 
@@ -87,10 +125,10 @@ Output (offline mode):
 
 ```
 ── CLI-1 ─────────────────────────────
-Route:    account → Account Support (confidence 0.87)
+Route:    account → Account Support (confidence 0.95)
 Priority: P1 · SLA 15 min 🚨 ESCALATE
 Signals:  security
-KB:       KB-305 (0.449), KB-303 (0.183)
+KB:       KB-305 (0.57), KB-302 (0.192)
 Status:   HUMAN REVIEW - escalation signal: security
 Draft reply:
   Hi there,
@@ -104,14 +142,15 @@ Draft reply:
   We'll follow up shortly with next steps.
 ```
 
-### Use an LLM
+### Switch on Claude
 
 ```bash
 cp .env.example .env
-# Claude:      TRIAGE_LLM=anthropic  and ANTHROPIC_API_KEY=...
-# Local/free:  TRIAGE_LLM=openai     with Ollama running (ollama pull llama3.1)
-pip install -e ".[anthropic,openai]"
+# TRIAGE_LLM=agent-sdk   and   ANTHROPIC_API_KEY=sk-ant-...
+triage "A staff member we let go last week still seems to be logging in and downloading reports"
 ```
+
+`TRIAGE_LLM` can be `offline` (default, free), `agent-sdk` (Claude orchestrates the agents as tools), `anthropic` (one Claude call per agent in a fixed pipeline), or `openai` (OpenAI, Azure OpenAI or a free local model via Ollama).
 
 ### REST API (for helpdesk webhooks)
 
@@ -124,8 +163,6 @@ curl -X POST localhost:8000/triage -H 'content-type: application/json' \
 Endpoints: `GET /health`, `POST /triage`, `POST /triage/batch`. Interactive docs are at `/docs`. A `Dockerfile` is included.
 
 ### MCP server (Claude Desktop, Claude Code, Cursor, VS Code)
-
-Add this to your MCP client config (for example, `claude_desktop_config.json`):
 
 ```json
 {
@@ -141,57 +178,58 @@ Add this to your MCP client config (for example, `claude_desktop_config.json`):
 
 | Tool | What it does |
 |---|---|
-| `triage_ticket(body, subject?, customer?)` | Full multi-agent pipeline on one ticket |
+| `triage_ticket(body, subject?, customer?)` | Full triage on one ticket (uses whichever backend `TRIAGE_LLM` selects) |
 | `search_help_centre(query, k?)` | Ranked help-centre articles |
 | `routing_policy()` | Team per category and SLA per priority |
 
-Then ask your assistant: *"Triage this customer email and tell me who should handle it."*
-
 ## Design decisions
 
-Questions an interviewer is likely to ask, and the reasoning behind each choice:
-
-- **Why several agents instead of one big prompt?** Each agent is small, testable and replaceable. The guardrail is pure Python because safety checks must be deterministic. Retrieval can move to a vector database without touching the other agents. One prompt doing everything is hard to test and hard to debug.
-- **Why keep an ML model when there's an LLM?** It runs in milliseconds for free. It's the fallback when the LLM is down or returns malformed JSON. And disagreement between the two is a cheap, useful uncertainty signal for routing to humans.
-- **Why can the LLM raise priority but never lower it?** Escalation is safety-critical. A model hallucination should never be able to downgrade a detected outage.
-- **Why a group split by template?** A random split put near-identical tickets in both train and test, which gave a misleading ~99% accuracy. Holding out whole templates measures generalisation to unseen wording, and it dropped accuracy to 58%. That's the honest number.
-- **Why human-in-the-loop?** Drafts are never auto-sent. Escalations, low-confidence routing, guardrail failures and every refund (money leaving the business) go to a person.
-- **Why a custom orchestrator instead of LangGraph or CrewAI?** The flow is a fixed pipeline with one decision gate, so a framework would add dependencies without adding capability. Each agent has a `run()` method, so moving to LangGraph nodes later would be mechanical.
-- **Why build an MCP server?** It makes the system usable from any MCP-compatible assistant without writing a UI, and it's the emerging standard way to give agents tools.
+- **Why Claude as orchestrator instead of a fixed pipeline?** A fixed pipeline can't decide that a ticket the router called "technical" is really a security incident, or search the help centre again with a better query. Claude can plan, re-query and overrule, while the code keeps the guarantees.
+- **Why enforce guarantees in code, around the agent?** Prompts are requests, not controls. The priority floor, guardrail re-run and review gate run after Claude's decision, so a hallucination or prompt injection in a ticket can't downgrade an outage or send an unchecked reply.
+- **Why only five tools and no built-in tools?** Least privilege. A triage agent has no reason to read files or run shell commands, and a ticket is untrusted input.
+- **Why keep the offline pipeline?** It costs nothing, runs in milliseconds, is the fallback when the API is down or over budget, and is what CI tests on every push.
+- **Why calibrate the classifier?** Uncalibrated scores made the 0.55 review threshold arbitrary, and v0.1 sent 94% of held-out tickets to humans. Calibrated probabilities let the threshold encode a business rule.
+- **Why F2 for escalation thresholds?** Pure recall picked "escalate almost everything" (14% precision on the tuning data). F2 says a missed outage costs about twice a false alarm, without that degenerate answer. It's documented in [`scripts/tune_thresholds.py`](scripts/tune_thresholds.py).
+- **Why a locked, checksummed test set and paired bootstrap?** Small hand-written test sets are easy to fool yourself with. Committing the set before the changes, never tuning on it, and testing whether differences exclude zero is what makes "+17.8 points" credible.
+- **Why a custom orchestrator for the offline path, not LangGraph?** It's a fixed pipeline with one gate. The agentic version uses the Claude Agent SDK, where planning actually matters.
 
 ## Limitations and next steps
 
-- The data is synthetic plus a 30-ticket hand-written set. The next step is evaluating on a public support dataset or anonymised real tickets.
-- Run and publish the LLM-mode evaluation (Claude Haiku vs a local Llama), with cost per 1,000 tickets.
-- Add embeddings-based retrieval and compare its hit rate against TF-IDF.
-- Add a feedback loop that retrains the ML baseline on human corrections from the review queue.
-- Connect to a real helpdesk (Zendesk or Freshdesk webhook) and post drafts as internal notes.
+- Measure Claude Agent SDK mode on the full locked test set (accuracy, escalation recall, cost per ticket), and compare it with offline mode using the same paired bootstrap.
+- Grow the dev set beyond 30 tickets; it's too small to hit the 95% auto-queue routing target precisely.
+- The hand-written training, dev and test tickets come from the same AI-assisted author, so they likely share a style and the test may flatter the model. The next step is a public support dataset or anonymised real tickets.
+- Add embeddings-based retrieval and a retraining loop from human corrections in the review queue.
 
 ## Project structure
 
 ```
 src/triage/
+  agent_sdk.py     Claude Agent SDK orchestrator: agents as tools + guarantees enforced in code
   agents/          classifier, priority, knowledge, responder, guardrail
-  orchestrator.py  pipeline + human-in-the-loop review gate + trace
+  orchestrator.py  offline/fixed pipeline + human-in-the-loop review gate + trace
+  factory.py       picks the orchestrator from TRIAGE_LLM
   llm.py           offline | Anthropic | OpenAI-compatible (Ollama, Azure OpenAI)
-  evaluate.py      metrics on held-out and hard sets -> reports/
-  api.py           FastAPI service
-  mcp_server.py    MCP server (3 tools)
-  cli.py           command-line demo
-kb/help_centre.md  20 help-centre articles the agents retrieve from
-data/              400 synthetic labelled tickets + 30 hand-written hard tickets
-scripts/           dataset generator (deterministic, seeded)
-tests/             27 tests incl. an evaluation regression gate run in CI
+  evaluate.py      metrics with 95% bootstrap CIs, retrieval hit@2, cost per ticket
+  api.py · mcp_server.py · cli.py
+config/thresholds.json   thresholds chosen on dev + held-out (never test)
+data/              400 synthetic + 102 varied training tickets · 30 dev · 90 locked test (+ checksum)
+kb/help_centre.md  20 help-centre articles with search keywords
+scripts/           dataset generator · threshold tuner · paired version comparison
+reports/v0.1, v0.2 evaluation reports
+tests/             38 tests: agents, guardrails, Agent SDK orchestrator (scripted fake Claude), API, MCP, data leakage, regression gate
 ```
 
 ## Running tests
 
 ```bash
-pytest -q          # 27 tests, no API key or network needed
+pytest -q          # 38 tests, no API key, no network, no cost
 ruff check src tests
+make tune          # re-pick thresholds on dev + held-out
+make eval          # held-out + dev
+make eval-test     # locked test set (report only)
 ```
 
-CI runs lint, tests and the evaluation on every push, and fails if escalation recall on the held-out set drops below 95%.
+CI runs lint, the tests and the full evaluation on every push. It fails if the locked test set's checksum changes, if a training ticket near-duplicates an evaluation ticket, or if held-out escalation recall, routing or priority accuracy fall below their gates.
 
 ---
 

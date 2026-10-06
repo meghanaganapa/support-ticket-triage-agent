@@ -30,7 +30,12 @@ def load_articles(path: Path = DEFAULT_KB) -> list[KBArticle]:
     for block in re.split(r"^## ", text, flags=re.MULTILINE)[1:]:
         header, _, body = block.partition("\n")
         art_id, _, title = header.strip().partition(" ")
-        articles.append(KBArticle(id=art_id, title=title.strip(), text=body.strip()))
+        keywords = ""
+        lines = body.strip().splitlines()
+        if lines and lines[0].startswith("Keywords:"):
+            keywords = lines.pop(0).removeprefix("Keywords:").strip().rstrip(".")
+        articles.append(KBArticle(id=art_id, title=title.strip(), text="\n".join(lines).strip(),
+                                  keywords=keywords))
     return articles
 
 
@@ -41,7 +46,9 @@ class KnowledgeAgent:
         self.articles = articles or load_articles()
         self.boost = category_boost
         self.vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True)
-        self.matrix = self.vectorizer.fit_transform([f"{a.title} {a.text}" for a in self.articles])
+        # Keywords are indexed (repeated to weight them) but never returned in article text.
+        self.matrix = self.vectorizer.fit_transform(
+            [f"{a.title} {a.keywords} {a.keywords} {a.text}" for a in self.articles])
 
     def search(self, query: str, category: Category | None = None, k: int = 2) -> list[KBArticle]:
         sims = cosine_similarity(self.vectorizer.transform([query]), self.matrix)[0]

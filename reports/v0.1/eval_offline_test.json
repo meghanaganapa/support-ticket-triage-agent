@@ -1,0 +1,289 @@
+{
+  "backend": "offline",
+  "dataset": "test",
+  "train_size": 400,
+  "test_size": 90,
+  "routing_accuracy": {
+    "value": 0.8,
+    "ci95": [
+      0.711,
+      0.878
+    ],
+    "n": 90
+  },
+  "routing_macro_f1": 0.801,
+  "priority_accuracy": {
+    "value": 0.789,
+    "ci95": [
+      0.7,
+      0.867
+    ],
+    "n": 90
+  },
+  "escalation_recall": {
+    "value": 0.786,
+    "ci95": [
+      0.571,
+      1.0
+    ],
+    "n": 14
+  },
+  "escalation_precision": {
+    "value": 0.786,
+    "ci95": [
+      0.571,
+      1.0
+    ],
+    "n": 14
+  },
+  "auto_queued_rate": {
+    "value": 0.444,
+    "ci95": [
+      0.344,
+      0.544
+    ],
+    "n": 90
+  },
+  "auto_queued_routing_accuracy": {
+    "value": 0.9,
+    "ci95": [
+      0.8,
+      0.975
+    ],
+    "n": 40
+  },
+  "retrieval_hit_at_2": {
+    "value": 0.783,
+    "ci95": [
+      0.681,
+      0.884
+    ],
+    "n": 69
+  },
+  "guardrail_pass_rate": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 90
+  },
+  "avg_latency_ms": 5.1,
+  "usage": {},
+  "cost_per_ticket_usd": 0.0,
+  "errors": [
+    {
+      "id": "L015",
+      "true": "technical",
+      "pred": "shipping",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Payment received webhooks stopped firing to our endpoint two days ago"
+    },
+    {
+      "id": "L023",
+      "true": "billing",
+      "pred": "technical",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "The receipts you send us don't show our ABN, can that be added?"
+    },
+    {
+      "id": "L025",
+      "true": "billing",
+      "pred": "account",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Our company card was replaced after fraud, where do I put the new number in?"
+    },
+    {
+      "id": "L039",
+      "true": "account",
+      "pred": "technical",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "I opened a report and it was full of another business's customers and invoices. That's not our data."
+    },
+    {
+      "id": "L040",
+      "true": "account",
+      "pred": "technical",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "A staff member we let go last week still seems to be logging in and downloading reports"
+    },
+    {
+      "id": "L046",
+      "true": "account",
+      "pred": "account",
+      "true_priority": "P3",
+      "pred_priority": "P1",
+      "escalate": false,
+      "pred_escalate": true,
+      "body": "New phone, old authenticator app is gone, can't log in"
+    },
+    {
+      "id": "L050",
+      "true": "account",
+      "pred": "account",
+      "true_priority": "P3",
+      "pred_priority": "P1",
+      "escalate": false,
+      "pred_escalate": true,
+      "body": "I've been locked out after too many password attempts, how long until I can try again?"
+    },
+    {
+      "id": "L052",
+      "true": "account",
+      "pred": "feature_request",
+      "true_priority": "P3",
+      "pred_priority": "P4",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Do you support signing in with Google Workspace?"
+    },
+    {
+      "id": "L054",
+      "true": "account",
+      "pred": "technical",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Can I stop staff from seeing the payroll section?"
+    },
+    {
+      "id": "L060",
+      "true": "refund",
+      "pred": "refund",
+      "true_priority": "P2",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "Unless you refund us I'll be leaving reviews everywhere and contacting consumer affairs"
+    },
+    {
+      "id": "L066",
+      "true": "refund",
+      "pred": "billing",
+      "true_priority": "P3",
+      "pred_priority": "P1",
+      "escalate": false,
+      "pred_escalate": true,
+      "body": "Plan was down for half a day last week, can we get a credit for that?"
+    },
+    {
+      "id": "L074",
+      "true": "shipping",
+      "pred": "account",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Courier says delivered but we never got it"
+    },
+    {
+      "id": "L076",
+      "true": "shipping",
+      "pred": "technical",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Need to send back a faulty reader, how do I get a label?"
+    },
+    {
+      "id": "L079",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Please let us split an invoice across two customers"
+    },
+    {
+      "id": "L080",
+      "true": "feature_request",
+      "pred": "billing",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "It'd be handy to have a Slack notification when an invoice is paid"
+    },
+    {
+      "id": "L081",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Any chance of a rules engine for bank reconciliation?"
+    },
+    {
+      "id": "L082",
+      "true": "feature_request",
+      "pred": "account",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Is multi-entity / multiple companies under one login on the roadmap?"
+    },
+    {
+      "id": "L085",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Could invoices be generated in Vietnamese for some of our clients?"
+    },
+    {
+      "id": "L086",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "A widget for my iPhone home screen showing unpaid invoices would be amazing"
+    },
+    {
+      "id": "L087",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "We need custom fields on invoices like PO number and project code"
+    },
+    {
+      "id": "L090",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Would like a GraphQL API alongside REST"
+    }
+  ],
+  "category_accuracy": 0.8,
+  "escalation_recall_value": 0.786,
+  "guardrail_pass_pct": 100.0
+}

@@ -1,0 +1,119 @@
+{
+  "backend": "offline",
+  "dataset": "dev",
+  "train_size": 502,
+  "test_size": 30,
+  "routing_accuracy": {
+    "value": 0.933,
+    "ci95": [
+      0.833,
+      1.0
+    ],
+    "n": 30
+  },
+  "routing_macro_f1": 0.941,
+  "priority_accuracy": {
+    "value": 0.867,
+    "ci95": [
+      0.733,
+      0.967
+    ],
+    "n": 30
+  },
+  "escalation_recall": {
+    "value": 0.5,
+    "ci95": [
+      0.167,
+      0.833
+    ],
+    "n": 6
+  },
+  "escalation_precision": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 3
+  },
+  "auto_queued_rate": {
+    "value": 0.633,
+    "ci95": [
+      0.467,
+      0.8
+    ],
+    "n": 30
+  },
+  "auto_queued_routing_accuracy": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 19
+  },
+  "retrieval_hit_at_2": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 29
+  },
+  "guardrail_pass_rate": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 30
+  },
+  "avg_latency_ms": 18.1,
+  "usage": {},
+  "cost_per_ticket_usd": 0.0,
+  "errors": [
+    {
+      "id": "H003",
+      "true": "account",
+      "pred": "account",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "My bookkeeper says the bank account number on our outgoing invoices isn't ours anymore. None of us changed it."
+    },
+    {
+      "id": "H010",
+      "true": "refund",
+      "pred": "refund",
+      "true_priority": "P2",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "Third email. Give me my $1188 back for the annual plan or I'm going to Fair Trading."
+    },
+    {
+      "id": "H011",
+      "true": "billing",
+      "pred": "refund",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "What's the difference in price between Growth and Business if we pay yearly?"
+    },
+    {
+      "id": "H018",
+      "true": "account",
+      "pred": "billing",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "One of our clients forwarded us an invoice they received from you that belongs to a totally different business. That's a privacy problem."
+    }
+  ],
+  "category_accuracy": 0.933,
+  "escalation_recall_value": 0.5,
+  "guardrail_pass_pct": 100.0
+}

@@ -5,6 +5,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY kb ./kb
 COPY data ./data
+COPY config ./config
 RUN pip install --no-cache-dir -e ".[anthropic,openai]"
 
 ENV TRIAGE_LLM=offline

@@ -1,0 +1,50 @@
+{
+  "routing_accuracy": {
+    "diff": 0.067,
+    "ci95": [
+      0.022,
+      0.122
+    ],
+    "verdict": "improved"
+  },
+  "priority_accuracy": {
+    "diff": 0.044,
+    "ci95": [
+      -0.011,
+      0.1
+    ],
+    "verdict": "within noise"
+  },
+  "escalation_correct": {
+    "diff": -0.011,
+    "ci95": [
+      -0.067,
+      0.033
+    ],
+    "verdict": "within noise"
+  },
+  "auto_queued": {
+    "diff": 0.178,
+    "ci95": [
+      0.1,
+      0.267
+    ],
+    "verdict": "improved"
+  },
+  "retrieval_hit_at_2": {
+    "diff": 0.101,
+    "ci95": [
+      0.029,
+      0.188
+    ],
+    "verdict": "improved"
+  },
+  "escalation_recall": {
+    "diff": 0.071,
+    "ci95": [
+      -0.143,
+      0.357
+    ],
+    "verdict": "within noise"
+  }
+}

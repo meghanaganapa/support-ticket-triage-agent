@@ -66,6 +66,7 @@ class KBArticle(BaseModel):
     id: str
     title: str
     text: str
+    keywords: str = ""  # search-only synonyms; never shown to customers
     score: float = 0.0
 
 

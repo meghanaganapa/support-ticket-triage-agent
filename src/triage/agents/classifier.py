@@ -12,6 +12,7 @@ which routes the ticket to human review instead of guessing.
 
 from __future__ import annotations
 
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import FeatureUnion, Pipeline
@@ -34,20 +35,24 @@ def ticket_text(t: Ticket) -> str:
     return f"{t.subject}. {t.body}"
 
 
-def build_text_model(class_weight: str | None = "balanced") -> Pipeline:
-    """Word + character n-gram TF-IDF into logistic regression.
+def build_text_model(class_weight: str | None = "balanced", calibrated: bool = True) -> Pipeline:
+    """Word + character n-gram TF-IDF into (calibrated) logistic regression.
 
     Character n-grams (3-5 chars within word boundaries) make the model robust to
     typos ("cilents") and word variants ("refunded" / "refund") it never saw in training.
+
+    Calibration (Platt scaling, 3-fold) makes ``predict_proba`` mean something:
+    a ticket scored 0.8 is right about 80% of the time. Without it, the review
+    threshold is a magic number; with it, the threshold is a business decision.
     """
     features = FeatureUnion([
         ("word", TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")),
         ("char", TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), sublinear_tf=True)),
     ])
-    return Pipeline([
-        ("features", features),
-        ("clf", LogisticRegression(max_iter=3000, C=4.0, class_weight=class_weight)),
-    ])
+    clf = LogisticRegression(max_iter=3000, C=4.0, class_weight=class_weight)
+    if calibrated:
+        clf = CalibratedClassifierCV(clf, method="sigmoid", cv=3)
+    return Pipeline([("features", features), ("clf", clf)])
 
 
 class ClassifierAgent:

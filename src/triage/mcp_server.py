@@ -16,8 +16,8 @@ from functools import lru_cache
 
 from mcp.server.mcpserver import MCPServer
 
+from .factory import build_orchestrator
 from .models import ROUTING, SLA_MINUTES, Category, Priority, Ticket
-from .orchestrator import TriageOrchestrator
 
 server = MCPServer(
     name="support-triage",
@@ -27,8 +27,8 @@ server = MCPServer(
 
 
 @lru_cache(maxsize=1)
-def _orch() -> TriageOrchestrator:
-    return TriageOrchestrator()
+def _orch():
+    return build_orchestrator()
 
 
 @server.tool()
@@ -42,7 +42,9 @@ def triage_ticket(body: str, subject: str = "", customer: str = "Unknown custome
 @server.tool()
 def search_help_centre(query: str, k: int = 3) -> list[dict]:
     """Search the help centre and return the most relevant articles with scores."""
-    return [a.model_dump() for a in _orch().knowledge.search(query, k=k)]
+    orch = _orch()
+    knowledge = orch.base.knowledge if hasattr(orch, "base") else orch.knowledge
+    return [a.model_dump(exclude={"keywords"}) for a in knowledge.search(query, k=k)]
 
 
 @server.tool()

@@ -1,0 +1,149 @@
+{
+  "backend": "offline",
+  "dataset": "dev",
+  "train_size": 400,
+  "test_size": 30,
+  "routing_accuracy": {
+    "value": 0.833,
+    "ci95": [
+      0.7,
+      0.967
+    ],
+    "n": 30
+  },
+  "routing_macro_f1": 0.82,
+  "priority_accuracy": {
+    "value": 0.8,
+    "ci95": [
+      0.667,
+      0.933
+    ],
+    "n": 30
+  },
+  "escalation_recall": {
+    "value": 0.333,
+    "ci95": [
+      0.0,
+      0.667
+    ],
+    "n": 6
+  },
+  "escalation_precision": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 2
+  },
+  "auto_queued_rate": {
+    "value": 0.6,
+    "ci95": [
+      0.4,
+      0.767
+    ],
+    "n": 30
+  },
+  "auto_queued_routing_accuracy": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 18
+  },
+  "retrieval_hit_at_2": {
+    "value": 0.828,
+    "ci95": [
+      0.69,
+      0.966
+    ],
+    "n": 29
+  },
+  "guardrail_pass_rate": {
+    "value": 1.0,
+    "ci95": [
+      1.0,
+      1.0
+    ],
+    "n": 30
+  },
+  "avg_latency_ms": 5.6,
+  "usage": {},
+  "cost_per_ticket_usd": 0.0,
+  "errors": [
+    {
+      "id": "H002",
+      "true": "technical",
+      "pred": "technical",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "Can't get into CloudLedger at all, neither can anyone else in the office. Just a spinning wheel then a server error. Payroll is due."
+    },
+    {
+      "id": "H010",
+      "true": "refund",
+      "pred": "billing",
+      "true_priority": "P2",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "Third email. Give me my $1188 back for the annual plan or I'm going to Fair Trading."
+    },
+    {
+      "id": "H011",
+      "true": "billing",
+      "pred": "refund",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "What's the difference in price between Growth and Business if we pay yearly?"
+    },
+    {
+      "id": "H016",
+      "true": "shipping",
+      "pred": "technical",
+      "true_priority": "P3",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Box came with a reader that has a smashed display. Need a working one."
+    },
+    {
+      "id": "H018",
+      "true": "account",
+      "pred": "billing",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "One of our clients forwarded us an invoice they received from you that belongs to a totally different business. That's a privacy problem."
+    },
+    {
+      "id": "H025",
+      "true": "feature_request",
+      "pred": "technical",
+      "true_priority": "P4",
+      "pred_priority": "P3",
+      "escalate": false,
+      "pred_escalate": false,
+      "body": "Dark theme please, my eyes at 11pm doing invoices..."
+    },
+    {
+      "id": "H026",
+      "true": "account",
+      "pred": "account",
+      "true_priority": "P1",
+      "pred_priority": "P3",
+      "escalate": true,
+      "pred_escalate": false,
+      "body": "Got an email about a sign in from Brazil. We're in Melbourne. Password no longer works."
+    }
+  ],
+  "category_accuracy": 0.833,
+  "escalation_recall_value": 0.333,
+  "guardrail_pass_pct": 100.0
+}

@@ -45,19 +45,39 @@ class PriorityAgent:
     """
 
     name = "priority"
-    ESCALATION_THRESHOLD = 0.35  # recall matters more than precision: a missed outage costs far more
 
-    def __init__(self, llm: LLM):
+    def __init__(self, llm: LLM, escalation_threshold: float = 0.35, priority_threshold: float = 0.5):
         self.llm = llm
+        # Thresholds are tuned on the dev + held-out sets by scripts/tune_thresholds.py,
+        # favouring recall: a missed outage costs far more than a false alarm.
+        self.escalation_threshold = escalation_threshold
+        self.priority_threshold = priority_threshold
         self.escalation_model = None
+        self.priority_model = None
 
-    def fit(self, tickets: list[Ticket], escalate: list[bool]) -> PriorityAgent:
+    def fit(self, tickets: list[Ticket], escalate: list[bool],
+            priorities: list[str] | None = None) -> PriorityAgent:
         from .classifier import build_text_model, ticket_text
 
+        texts = [ticket_text(t) for t in tickets]
         if len(set(escalate)) > 1:
-            self.escalation_model = build_text_model()
-            self.escalation_model.fit([ticket_text(t) for t in tickets], escalate)
+            self.escalation_model = build_text_model().fit(texts, escalate)
+        if priorities and len(set(priorities)) > 1:
+            self.priority_model = build_text_model().fit(texts, priorities)
         return self
+
+    def urgent_priority(self, ticket: Ticket) -> tuple[Priority, float] | None:
+        """The learned model's view, only when it says P1 or P2 with enough confidence."""
+        if self.priority_model is None:
+            return None
+        from .classifier import ticket_text
+
+        probs = self.priority_model.predict_proba([ticket_text(ticket)])[0]
+        classes = list(self.priority_model.classes_)
+        for level in ("P1", "P2"):
+            if level in classes and probs[classes.index(level)] >= self.priority_threshold:
+                return Priority(level), float(probs[classes.index(level)])
+        return None
 
     def escalation_probability(self, ticket: Ticket) -> float | None:
         if self.escalation_model is None:
@@ -70,13 +90,21 @@ class PriorityAgent:
     def assess(self, ticket: Ticket, category: Category) -> PriorityAssessment:
         """Rules + learned model, no LLM."""
         base = self.rules(ticket, category)
+        priority, escalate, signals = base.priority, base.escalate, list(base.signals)
+
+        learned = self.urgent_priority(ticket)
+        if learned and category != Category.feature_request:
+            priority = _higher(priority, learned[0])  # may raise, never lower
+            if learned[0] != base.priority:
+                signals.append(f"ml_priority:{learned[0].value}:{learned[1]:.2f}")
+
         prob = self.escalation_probability(ticket)
-        if prob is not None and prob >= self.ESCALATION_THRESHOLD and not base.escalate:
+        if prob is not None and prob >= self.escalation_threshold and not escalate:
             # Security/data issues are P1; legal and refund threats are P2.
             implied = Priority.P1 if category in (Category.technical, Category.account) else Priority.P2
-            return PriorityAssessment(priority=_higher(base.priority, implied), escalate=True,
-                                      signals=base.signals + [f"ml_escalation:{prob:.2f}"])
-        return base
+            priority, escalate = _higher(priority, implied), True
+            signals.append(f"ml_escalation:{prob:.2f}")
+        return PriorityAssessment(priority=priority, escalate=escalate, signals=signals)
 
     def rules(self, ticket: Ticket, category: Category) -> PriorityAssessment:
         text = f"{ticket.subject} {ticket.body}".lower()

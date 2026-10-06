@@ -10,27 +10,40 @@ a support lead can see *why* a ticket was routed and prioritised the way it was.
 
 from __future__ import annotations
 
+import json
 import time
 
 from .agents import ClassifierAgent, GuardrailAgent, KnowledgeAgent, PriorityAgent, ResponderAgent
-from .data import load_rows, split, to_ticket
+from .data import ROOT, to_ticket
+from .data import training_rows as default_training_rows
 from .llm import LLM, get_llm
 from .models import ROUTING, SLA_MINUTES, Category, Ticket, TriageResult
 
-CONFIDENCE_THRESHOLD = 0.55
+THRESHOLDS_FILE = ROOT / "config" / "thresholds.json"
+DEFAULT_THRESHOLDS = {"confidence": 0.55, "escalation": 0.35, "priority": 0.5}
 ALWAYS_REVIEW = {Category.refund}  # money leaving the business always gets a human
+
+
+def load_thresholds() -> dict:
+    """Thresholds chosen on dev + held-out data by scripts/tune_thresholds.py (never on test)."""
+    if THRESHOLDS_FILE.exists():
+        return {**DEFAULT_THRESHOLDS, **json.loads(THRESHOLDS_FILE.read_text())["thresholds"]}
+    return dict(DEFAULT_THRESHOLDS)
 
 
 class TriageOrchestrator:
     def __init__(self, llm: LLM | None = None, training_rows: list[dict] | None = None,
-                 known_customers: list[str] | None = None):
+                 known_customers: list[str] | None = None, thresholds: dict | None = None):
         self.llm = llm or get_llm()
         if training_rows is None:
-            training_rows, _ = split(load_rows())
-        self.classifier = ClassifierAgent(self.llm).fit(
-            [to_ticket(r) for r in training_rows], [r["category"] for r in training_rows])
-        self.priority = PriorityAgent(self.llm).fit(
-            [to_ticket(r) for r in training_rows], [bool(r.get("escalate")) for r in training_rows])
+            training_rows = default_training_rows()
+        self.thresholds = {**load_thresholds(), **(thresholds or {})}
+        tickets = [to_ticket(r) for r in training_rows]
+        self.classifier = ClassifierAgent(self.llm).fit(tickets, [r["category"] for r in training_rows])
+        self.priority = PriorityAgent(
+            self.llm, escalation_threshold=self.thresholds["escalation"],
+            priority_threshold=self.thresholds["priority"],
+        ).fit(tickets, [bool(r.get("escalate")) for r in training_rows], [r["priority"] for r in training_rows])
         self.knowledge = KnowledgeAgent()
         self.responder = ResponderAgent(self.llm)
         customers = known_customers or sorted({r.get("customer", "") for r in training_rows} - {""})
@@ -63,7 +76,7 @@ class TriageOrchestrator:
         reasons = []
         if pa.escalate:
             reasons.append("escalation signal: " + ", ".join(pa.signals))
-        if cls.confidence < CONFIDENCE_THRESHOLD:
+        if cls.confidence < self.thresholds["confidence"]:
             reasons.append(f"low routing confidence ({cls.confidence:.2f})")
         if not report.passed:
             reasons.append("guardrail: " + "; ".join(report.issues))

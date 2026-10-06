@@ -13,20 +13,21 @@ from functools import lru_cache
 from fastapi import FastAPI
 
 from . import __version__
+from .factory import build_orchestrator
 from .models import Ticket, TriageResult
-from .orchestrator import TriageOrchestrator
 
 app = FastAPI(title="Support Ticket Triage Agents", version=__version__)
 
 
 @lru_cache(maxsize=1)
-def orchestrator() -> TriageOrchestrator:
-    return TriageOrchestrator()
+def orchestrator():
+    return build_orchestrator()
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "llm": orchestrator().llm.name}
+    orch = orchestrator()
+    return {"status": "ok", "backend": type(orch).__name__, "model": getattr(orch, "model", getattr(getattr(orch, "llm", None), "name", None))}
 
 
 @app.post("/triage", response_model=TriageResult)

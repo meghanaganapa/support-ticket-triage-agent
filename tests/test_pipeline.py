@@ -1,9 +1,10 @@
 import asyncio
+import difflib
 
 from fastapi.testclient import TestClient
 
 from triage import api, mcp_server
-from triage.data import HARD_DATA, load_rows, split
+from triage.data import DEV_DATA, EXTRA_TRAIN, TEST_DATA, load_rows, split, verify_test_set
 from triage.evaluate import evaluate
 from triage.models import Priority, Ticket
 
@@ -34,22 +35,41 @@ def test_split_holds_out_whole_templates():
     assert {r["category"] for r in train} == {r["category"] for r in test}
 
 
-def test_hard_set_is_labelled():
-    rows = load_rows(HARD_DATA)
-    assert len(rows) == 30 and all({"category", "priority", "escalate"} <= r.keys() for r in rows)
+def test_dev_and_locked_test_sets_are_labelled():
+    for path, n in ((DEV_DATA, 30), (TEST_DATA, 90)):
+        rows = load_rows(path)
+        assert len(rows) == n
+        assert all({"category", "priority", "escalate", "kb"} <= r.keys() for r in rows)
+
+
+def test_locked_test_set_is_unchanged():
+    verify_test_set()  # raises if data/test_locked.jsonl no longer matches its committed checksum
+
+
+def test_no_training_ticket_near_duplicates_an_evaluation_ticket():
+    train = [r["body"].lower() for r in load_rows(EXTRA_TRAIN)]
+    held = [r["body"].lower() for r in load_rows(DEV_DATA) + load_rows(TEST_DATA)]
+    worst = max(difflib.SequenceMatcher(None, a, b).ratio() for a in train for b in held)
+    assert worst < 0.8, f"possible leakage: similarity {worst:.2f}"
 
 
 def test_evaluation_regression_gate():
-    """CI fails if a change makes the offline system miss urgent tickets."""
-    r = evaluate("offline", dataset="heldout")
-    assert r["escalation_recall"] >= 0.95
-    assert r["category_accuracy"] >= 0.5
-    assert r["guardrail_pass_pct"] == 100.0
+    """CI fails if a change makes the offline system worse on the sets it was tuned on."""
+    held = evaluate("offline", dataset="heldout")
+    assert held["escalation_recall"]["value"] >= 0.95
+    assert held["routing_accuracy"]["value"] >= 0.65
+    assert held["priority_accuracy"]["value"] >= 0.85
+    assert held["auto_queued_routing_accuracy"]["value"] >= 0.95
+    assert held["guardrail_pass_rate"]["value"] == 1.0
+    dev = evaluate("offline", dataset="dev")
+    assert dev["routing_accuracy"]["value"] >= 0.85
+    assert dev["retrieval_hit_at_2"]["value"] >= 0.9
 
 
 def test_api_health_and_triage():
     client = TestClient(api.app)
-    assert client.get("/health").json()["status"] == "ok"
+    health = client.get("/health").json()
+    assert health["status"] == "ok" and health["backend"] == "TriageOrchestrator"
     resp = client.post("/triage", json={"id": "A1", "body": "Our card was billed twice this month"})
     assert resp.status_code == 200
     assert resp.json()["team"] in {"Billing Ops", "Tier-2 Engineering", "Account Support"}

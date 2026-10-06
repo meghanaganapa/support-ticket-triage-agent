@@ -12,8 +12,8 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -23,5 +23,5 @@ jobs:
         run: ruff check src tests
       - name: Tests (includes the evaluation regression gate)
         run: pytest -q
-      - name: Evaluation report
-        run: python -m triage.evaluate >> "$GITHUB_STEP_SUMMARY"
+      - name: Evaluation report (offline; the locked test set is reported, never tuned on)
+        run: python -m triage.evaluate --dataset all >> "$GITHUB_STEP_SUMMARY"
